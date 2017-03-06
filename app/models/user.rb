@@ -5,5 +5,6 @@ class User < ApplicationRecord
   devise :database_authenticatable, :registerable,
          :recoverable, :rememberable, :trackable, :validatable
 
-  has_many :massages
+  has_many :user_massages
+  has_many :massages, through: :user_massages
 end

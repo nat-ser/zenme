@@ -5,7 +5,8 @@ class GrouponScraper
     links = get_nearby_massage_links(doc, distance)
     links.each do |link|
       massage = create_massage_from_link(link)
-      current_user.massages << massage
+      current_user.massages << massage unless current_user.massages.include? massage
+      massage.users << current_user unless massage.users.include? current_user
     end
   end
 
@@ -39,26 +40,24 @@ class GrouponScraper
       title: title(doc),
       rating: rating(doc),
       rating_count: rating_count(doc),
-      fine_print: fine_print(doc)
-      # merchant_profile: merchant_profile(doc)
+      fine_print: fine_print(doc),
+      merchant_profile: merchant_profile(doc)
     }
   end
 
   def self.address(link)
-    @address ||= find_address(link)
-  end
-
-  def self.find_address(link)
     driver = Selenium::WebDriver.for :chrome
     driver.get link
     wait = Selenium::WebDriver::Wait.new(timeout: 10)
-    # TODDO class incentive always on page -> think of different condition
-    if driver.find_element(class: "incentive")
-      driver.find_element(id: "nothx").click
-      # @address = driver.find_element(class: "address").text
+    # close promotion if it pops up
+    driver.find_element(id: "nothx").click
+    # handle browser inconsistencies
+    begin
+      address = driver.find_element(class: "address").text
+    rescue Selenium::WebDriver::Error::NoSuchElementError
+      wait.until { driver.find_element(class: "address-content") }
+      address = driver.find_element(class: "address-content").text
     end
-    wait.until { driver.find_element(class: "address-content") }
-    address = driver.find_element(class: "address-content").text
     driver.quit
     address
   end
@@ -86,8 +85,8 @@ class GrouponScraper
     doc.at_css(".fine-print span").text + " " + doc.at_css(".fine-print span:nth-of-type(2)").text
   end
 
-  # def self.merchant_profile(doc)
-  # 	#TODO find proper selectors for this
-  # 	doc.at_css(".merchant-profile p:nth-of-type(2)").text
-  # end
+  def self.merchant_profile(doc)
+    return unless doc.at_css(".merchant-profile p:nth-of-type(2)")
+    doc.at_css(".merchant-profile p:nth-of-type(2)").text
+  end
 end
