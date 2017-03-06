@@ -5,8 +5,7 @@ class GrouponScraper
     links = get_nearby_massage_links(doc, distance)
     links.each do |link|
       massage = create_massage_from_link(link)
-      current_user.massages << massage unless current_user.massages.include? massage
-      massage.users << current_user unless massage.users.include? current_user
+      massage.user_massages.find_or_create_by(user: current_user)
     end
   end
 
@@ -82,7 +81,8 @@ class GrouponScraper
   end
 
   def self.fine_print(doc)
-    doc.at_css(".fine-print span").text + " " + doc.at_css(".fine-print span:nth-of-type(2)").text
+    doc.at_css(".fine-print span").text + " "
+    + doc.at_css(".fine-print span:nth-of-type(2)").text
   end
 
   def self.merchant_profile(doc)
