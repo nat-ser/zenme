@@ -1,0 +1,11 @@
+# inherit_from: .rubocop_todo.yml
+
+Style/StringLiterals:  
+  EnforcedStyle: double_quotes
+  Enabled: true
+AllCops:
+  TargetRubyVersion: 2.4
+Metrics/LineLength:
+  Max: 1000
+Documentation:
+  Enabled: false
