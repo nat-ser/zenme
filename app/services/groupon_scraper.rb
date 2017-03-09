@@ -30,7 +30,7 @@ class GrouponScraper
   def self.create_massage_from_link(link)
     doc = Nokogiri::HTML(open(link))
     attrs = massage_attrs(doc, link)
-    Massage.create(attrs)
+    Massage.find_or_create_by(attrs)
   end
 
   def self.massage_attrs(doc, link)
@@ -45,20 +45,14 @@ class GrouponScraper
   end
 
   def self.address(link)
-    driver = Selenium::WebDriver.for :chrome
-    driver.get link
-    wait = Selenium::WebDriver::Wait.new(timeout: 10)
-    # close promotion if it pops up
-    driver.find_element(id: "nothx").click
-    # handle browser inconsistencies
-    begin
-      address = driver.find_element(class: "address").text
-    rescue Selenium::WebDriver::Error::NoSuchElementError
-      wait.until { driver.find_element(class: "address-content") }
-      address = driver.find_element(class: "address-content").text
-    end
-    driver.quit
-    address
+    path = File.basename(URI.parse(link).path)
+    url = "https://www.groupon.com/deals/merchant_locations_proxy/#{path}.json?get_user_geo_details=true&page_type=local"
+    location_json = JSON.parse(Faraday.new(url).get.body)["merchantHtml"]
+    doc = Nokogiri::HTML(location_json)
+
+    # to account for different formatting of address
+    result = doc.at_css(".address-content") || doc.at_css(".address")
+    result.text.gsub(/\s+/, " ")
   end
 
   def self.title(doc)
